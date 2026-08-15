@@ -26,21 +26,20 @@
         
         <!-- Dashboard Cards (แสดงสรุปยอดเงิน) -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <!-- ยอดเงินรวมคลังห้อง -->
             <div class="bg-blue-50 p-4 rounded-xl shadow-sm border border-blue-200 col-span-2 md:col-span-1">
                 <p class="text-xs font-semibold text-blue-700">ยอดเงินรวมในคลังห้อง</p>
                 <p id="statGrandTotal" class="text-2xl font-black text-blue-600">0 บาท</p>
-                <p class="text-[10px] text-blue-500 mt-1">*รวมเงินเก็บห้อง + รายรับอื่นๆ</p>
+                <p class="text-[10px] text-blue-500 mt-1">*รวมเงินคลัง + รายรับอื่นๆ</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <p class="text-xs text-gray-500">เงินเก็บห้องที่เก็บได้</p>
-                <p id="statTotalPaid" class="text-xl font-bold text-emerald-600">0 บาท</p>
-                <p id="statPaidCount" class="text-xs text-gray-400 mt-1">จ่ายครบ 0 / 35 คน</p>
+                <p class="text-xs text-gray-500">สถานะการจ่ายเงิน</p>
+                <p id="statPaidCount" class="text-xl font-bold text-emerald-600">จ่ายครบ 35/35 คน</p>
+                <p class="text-xs text-gray-400 mt-1">นักเรียนทั้งหมด 35 คน</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <p class="text-xs text-gray-500">ยอดค้างชำระรวม</p>
                 <p id="statTotalOwed" class="text-xl font-bold text-rose-600">0 บาท</p>
-                <p id="statUnpaidCount" class="text-xs text-gray-400 mt-1">ค้าง 35 คน</p>
+                <p id="statUnpaidCount" class="text-xs text-gray-400 mt-1">ค้างชำระ 0 คน</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <p class="text-xs text-gray-500">รายรับ-รายจ่ายอื่นๆ</p>
@@ -112,9 +111,9 @@
                         <tr>
                             <th class="px-4 py-3">เลขที่</th>
                             <th class="px-4 py-3">ชื่อ-นามสกุล</th>
-                            <th class="px-4 py-3 text-center">สถานะการชำระ</th>
+                            <th class="px-4 py-3 text-center">สถานะ</th>
                             <th class="px-4 py-3 text-center">ยอดค้างชำระ</th>
-                            <th class="px-4 py-3 text-center">จัดการ (Admin)</th>
+                            <th class="px-4 py-3 text-center">กำหนดยอดค้าง (Admin)</th>
                         </tr>
                     </thead>
                     <tbody id="studentTableBody">
@@ -126,7 +125,7 @@
 
     </div>
 
-    <!-- Admin Password Modal (ไม่มีข้อความบอกรหัสผ่านแล้ว) -->
+    <!-- Admin Password Modal -->
     <div id="adminModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
@@ -155,7 +154,6 @@
     <script>
         let isAdminLoggedIn = false;
         let currentFilter = 'all';
-        const RATE_PER_WEEK = 25; // เงินห้องสัปดาห์ละ 25 บาท
 
         // รายชื่อเพื่อน ม.5/1 (35 คน)
         const studentNames = [
@@ -168,16 +166,14 @@
             "กนกพร", "กรณ์ศศิวรรณ์", "ชยาภา", "สรณ์สิริ", "เสาวลักษณ์"
         ];
 
+        // ตั้งค่าเริ่มต้นยอดค้างชำระ = 0 บาท ทุกคน
         let students = studentNames.map((name, index) => ({
             id: index + 1,
             name: name,
-            weeksOwed: 0
+            amountOwed: 0 
         }));
 
-        // รายการธุรกรรมอื่นๆ ในคลังห้อง (รายรับ-รายจ่าย)
-        let transactions = [
-            { id: 1, title: "ยอดยกมาจากบัญชีรวม", amount: 500, type: "income" }
-        ];
+        let transactions = [];
 
         document.addEventListener('DOMContentLoaded', () => {
             renderTable();
@@ -191,17 +187,14 @@
 
             let paidFullyCount = 0;
             let totalOwedMoney = 0;
-            let totalPaidMoney = 0;
 
             students.forEach(student => {
-                const amountOwed = student.weeksOwed * RATE_PER_WEEK;
-                const isPaidFully = student.weeksOwed === 0;
+                const isPaidFully = student.amountOwed <= 0;
 
                 if (isPaidFully) {
                     paidFullyCount++;
-                    totalPaidMoney += RATE_PER_WEEK * 4; // สมมติ 4 สัปดาห์
                 } else {
-                    totalOwedMoney += amountOwed;
+                    totalOwedMoney += student.amountOwed;
                 }
 
                 const matchSearch = student.name.toLowerCase().includes(searchKeyword) || student.id.toString().includes(searchKeyword);
@@ -218,18 +211,19 @@
                         <td class="px-4 py-3 text-center">
                             ${isPaidFully 
                                 ? `<span class="bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-bold"><i class="fa-solid fa-circle-check"></i> จ่ายครบแล้ว</span>` 
-                                : `<span class="bg-rose-100 text-rose-700 px-2.5 py-1 rounded-full text-xs font-bold"><i class="fa-solid fa-clock"></i> ค้าง ${student.weeksOwed} สัปดาห์</span>`}
+                                : `<span class="bg-rose-100 text-rose-700 px-2.5 py-1 rounded-full text-xs font-bold"><i class="fa-solid fa-clock"></i> ค้างชำระ</span>`}
                         </td>
-                        <td class="px-4 py-3 text-center font-bold ${amountOwed > 0 ? 'text-rose-600' : 'text-gray-400'}">
-                            ${amountOwed > 0 ? `${amountOwed} บาท` : '0 บาท'}
+                        <td class="px-4 py-3 text-center font-bold ${student.amountOwed > 0 ? 'text-rose-600' : 'text-gray-400'}">
+                            ${student.amountOwed > 0 ? `${student.amountOwed.toLocaleString()} บาท` : '0 บาท'}
                         </td>
                         <td class="px-4 py-3 text-center">
                             ${isAdminLoggedIn 
-                                ? `<div class="flex justify-center gap-1">
-                                    <button onclick="changeOwed(${student.id}, -1)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded font-medium">จ่าย (-1 W)</button>
-                                    <button onclick="changeOwed(${student.id}, 1)" class="bg-rose-500 hover:bg-rose-600 text-white text-xs px-2.5 py-1 rounded font-medium">+ค้าง (+1 W)</button>
+                                ? `<div class="flex justify-center items-center gap-1">
+                                    <input type="number" id="inputOwed_${student.id}" placeholder="ระบุจำนวน" value="${student.amountOwed > 0 ? student.amountOwed : ''}" class="w-20 border border-gray-300 rounded px-2 py-1 text-xs text-center focus:ring-1 focus:ring-amber-400 focus:outline-none">
+                                    <button onclick="setStudentOwed(${student.id})" class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-2 py-1 rounded font-medium">ตั้งยอด</button>
+                                    <button onclick="clearStudentOwed(${student.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2 py-1 rounded font-medium" title="ปรับเป็นจ่ายแล้ว">เคลียร์</button>
                                    </div>`
-                                : `<span class="text-xs text-gray-400">ล็อกอิน Admin เพื่อปรับยอด</span>`}
+                                : `<span class="text-xs text-gray-400">ล็อกอิน Admin เพื่อตั้งยอด</span>`}
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -243,18 +237,33 @@
                 else extraNet -= tx.amount;
             });
 
-            const grandTotal = totalPaidMoney + extraNet;
-
             // อัปเดตข้อมูลบน Cards
-            document.getElementById('statGrandTotal').innerText = `${grandTotal.toLocaleString()} บาท`;
-            document.getElementById('statTotalPaid').innerText = `${totalPaidMoney.toLocaleString()} บาท`;
+            document.getElementById('statGrandTotal').innerText = `${extraNet.toLocaleString()} บาท`;
             document.getElementById('statPaidCount').innerText = `จ่ายครบ ${paidFullyCount} / ${students.length} คน`;
             document.getElementById('statTotalOwed').innerText = `${totalOwedMoney.toLocaleString()} บาท`;
-            document.getElementById('statUnpaidCount').innerText = `ค้าง ${students.length - paidFullyCount} คน`;
+            document.getElementById('statUnpaidCount').innerText = `ค้างชำระ ${students.length - paidFullyCount} คน`;
             document.getElementById('statExtraNet').innerText = `${extraNet >= 0 ? '+' : ''}${extraNet.toLocaleString()} บาท`;
         }
 
-        // ฟังก์ชั่นจัดการเพิ่มรายการธุรกรรม (Admin)
+        // ฟังก์ชั่นตั้งยอดเงินค้างชำระโดยตรง (Admin)
+        function setStudentOwed(studentId) {
+            const inputVal = parseFloat(document.getElementById(`inputOwed_${studentId}`).value);
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+                student.amountOwed = isNaN(inputVal) || inputVal < 0 ? 0 : inputVal;
+                renderTable();
+            }
+        }
+
+        // เคลียร์ยอดค้างชำระเป็น 0 บาท (จ่ายแล้ว)
+        function clearStudentOwed(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+                student.amountOwed = 0;
+                renderTable();
+            }
+        }
+
         function addTransaction() {
             const title = document.getElementById('txTitle').value.trim();
             const amount = parseFloat(document.getElementById('txAmount').value);
@@ -323,20 +332,11 @@
             });
         }
 
-        function changeOwed(studentId, change) {
-            const student = students.find(s => s.id === studentId);
-            if (student) {
-                student.weeksOwed = Math.max(0, student.weeksOwed + change);
-                renderTable();
-            }
-        }
-
         function setFilter(filterType) {
             currentFilter = filterType;
             renderTable();
         }
 
-        // ระบบ Admin
         function openAdminModal() {
             if (isAdminLoggedIn) {
                 alert("คุณอยู่ในระบบ Admin เรียบร้อยแล้ว");

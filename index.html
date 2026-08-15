@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการเงินห้อง ม.5/1</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-12">
+
+    <!-- Header & Navbar -->
+    <nav class="bg-indigo-600 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-wallet text-xl text-yellow-300"></i>
+                <h1 class="text-lg font-bold">คลังเงินห้อง ม.5/1</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="role-badge" class="px-2.5 py-1 bg-indigo-800 rounded-full text-xs font-medium text-indigo-200">
+                    <i class="fa-solid fa-user text-[10px] mr-1"></i> ทั่วไป
+                </span>
+                <button id="btn-login-modal" onclick="toggleModal('login-modal')" class="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-semibold px-3 py-1 rounded-lg text-xs transition">
+                    <i class="fa-solid fa-lock mr-1"></i> Admin
+                </button>
+                <button id="btn-logout" onclick="logoutAdmin()" class="hidden bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-semibold transition">
+                    <i class="fa-solid fa-right-from-bracket mr-1"></i> ออกจากระบบ
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 mt-4 space-y-4">
+
+        <!-- Top Overview Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-medium text-slate-500">ยอดเก็บสัปดาห์นี้</p>
+                <h2 id="stat-total-money" class="text-xl font-bold text-indigo-600 mt-1">0 บาท</h2>
+                <p class="text-[10px] text-slate-400 mt-0.5">เป้า: <span id="stat-target-money">0</span> บ.</p>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-medium text-slate-500">ชำระแล้ว</p>
+                <h2 id="stat-paid-count" class="text-xl font-bold text-emerald-600 mt-1">0 / 35</h2>
+                <p class="text-[10px] text-emerald-600 font-medium mt-0.5" id="stat-paid-percent">0%</p>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-medium text-slate-500">ค้างชำระ</p>
+                <h2 id="stat-unpaid-count" class="text-xl font-bold text-rose-600 mt-1">0 คน</h2>
+                <p class="text-[10px] text-rose-500 font-medium mt-0.5">ค้าง: <span id="stat-unpaid-money">0</span> บ.</p>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-medium text-slate-500">อัตราต่อสัปดาห์</p>
+                <h2 class="text-xl font-bold text-slate-700 mt-1">25 บ./คน</h2>
+                <p class="text-[10px] text-slate-400 mt-0.5">(5 วัน × 5 บาท)</p>
+            </div>
+        </div>
+
+        <!-- Controls & Filters Section -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 md:space-y-0 md:flex md:gap-4 md:justify-between md:items-center">
+            <div class="flex items-center gap-2">
+                <label class="text-xs font-semibold whitespace-nowrap text-slate-600">สัปดาห์ที่:</label>
+                <select id="week-select" onchange="switchWeek()" class="bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-lg p-2 w-full font-medium">
+                    <option value="1">สัปดาห์ที่ 1</option>
+                    <option value="2">สัปดาห์ที่ 2</option>
+                    <option value="3">สัปดาห์ที่ 3</option>
+                    <option value="4">สัปดาห์ที่ 4</option>
+                </select>
+            </div>
+
+            <div class="relative w-full md:w-64">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+                <input type="text" id="search-input" onkeyup="filterStudents()" placeholder="ค้นหาชื่อนักเรียน..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="flex items-center gap-2 justify-end">
+                <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1 shadow-sm">
+                    <i class="fa-solid fa-file-excel"></i> Export CSV
+                </button>
+                <button id="btn-reset-week" onclick="resetCurrentWeek()" class="hidden bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-medium transition items-center gap-1">
+                    <i class="fa-solid fa-rotate-right"></i> รีเซ็ต
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <!-- Student Table -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <h3 class="font-bold text-xs text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-users text-indigo-500"></i> รายชื่อ (35 คน)
+                    </h3>
+                    <div class="flex gap-1 text-[11px]">
+                        <button onclick="filterStatus('all')" class="filter-btn active-filter px-2 py-0.5 rounded border font-medium bg-indigo-50 border-indigo-200 text-indigo-600">ทั้งหมด</button>
+                        <button onclick="filterStatus('paid')" class="filter-btn px-2 py-0.5 rounded border font-medium bg-white border-slate-200 text-slate-600">จ่ายแล้ว</button>
+                        <button onclick="filterStatus('unpaid')" class="filter-btn px-2 py-0.5 rounded border font-medium bg-white border-slate-200 text-slate-600">ค้างชำระ</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-[450px] overflow-y-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="text-[11px] text-slate-500 uppercase bg-slate-50 sticky top-0 border-b">
+                            <tr>
+                                <th class="px-3 py-2 text-center">เลขที่</th>
+                                <th class="px-3 py-2">ชื่อ-นามสกุล</th>
+                                <th class="px-3 py-2 text-center">สถานะ</th>
+                                <th class="px-3 py-2 text-center">ประเภท</th>
+                                <th class="px-3 py-2 text-center admin-only hidden">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-table-body" class="divide-y divide-slate-100">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Side Cards -->
+            <div class="space-y-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-xs text-slate-700 mb-3 flex items-center gap-1.5">
+                        <i class="fa-solid fa-chart-pie text-indigo-500"></i> สัดส่วนการชำระ
+                    </h3>
+                    <div class="w-full flex justify-center h-40">
+                        <canvas id="paymentChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-rose-600 flex items-center gap-1.5 text-xs">
+                            <i class="fa-solid fa-triangle-exclamation"></i> ค้างชำระ
+                        </h3>
+                        <span id="unpaid-badge-count" class="bg-rose-100 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full">0 คน</span>
+                    </div>
+                    <div id="unpaid-list" class="space-y-1.5 max-h-40 overflow-y-auto text-xs"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Log -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <h3 class="font-bold text-xs text-slate-700 mb-3 flex items-center gap-1.5">
+                <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> ประวัติการชำระเงินล่าสุด
+            </h3>
+            <div class="overflow-x-auto max-h-36 overflow-y-auto">
+                <table class="w-full text-xs text-left">
+                    <thead class="text-[10px] text-slate-500 uppercase bg-slate-50 border-b sticky top-0">
+                        <tr>
+                            <th class="px-3 py-1.5">วัน-เวลา</th>
+                            <th class="px-3 py-1.5">นักเรียน</th>
+                            <th class="px-3 py-1.5">สัปดาห์</th>
+                            <th class="px-3 py-1.5 text-center">ประเภท</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-log-body" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal: Login Admin -->
+    <div id="login-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl p-5 w-full max-w-xs shadow-xl space-y-3">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-sm text-slate-800">เข้าสู่ระบบ Admin</h3>
+                <button onclick="toggleModal('login-modal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div>
+                <label class="text-[11px] font-semibold text-slate-500 block mb-1">รหัสผ่าน Admin</label>
+                <input type="password" id="admin-pass-input" placeholder="ใส่รหัสผ่าน (ค่าเริ่มต้น: 1234)" class="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+                <p class="text-[10px] text-slate-400 mt-1">* รหัสผ่านเริ่มต้น: <span class="font-bold text-indigo-600">1234</span></p>
+            </div>
+            <button onclick="loginAdmin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg text-xs transition">
+                ยืนยัน
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Mark Payment -->
+    <div id="payment-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl p-5 w-full max-w-xs shadow-xl space-y-3">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-sm text-slate-800">บันทึกการชำระเงิน</h3>
+                <button onclick="toggleModal('payment-modal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <input type="hidden" id="modal-student-id">
+
+            <div>
+                <p class="text-[10px] text-slate-400">นักเรียน</p>
+                <p id="modal-student-name" class="font-bold text-sm text-slate-800"></p>
+                <p class="text-xs text-indigo-600 font-semibold mt-0.5">ยอดชำระ: 25 บาท</p>
+            </div>
+
+            <div>
+                <label class="text-[11px] font-semibold text-slate-500 block mb-1.5">ช่องทางชำระเงิน</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center gap-1.5 p-2 border rounded-lg cursor-pointer hover:bg-slate-50 border-indigo-200">
+                        <input type="radio" name="pay-method" value="เงินสด" checked class="text-indigo-600">
+                        <span class="text-xs font-medium"><i class="fa-solid fa-money-bill-wave text-emerald-500"></i> เงินสด</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 p-2 border rounded-lg cursor-pointer hover:bg-slate-50 border-indigo-200">
+                        <input type="radio" name="pay-method" value="โอนเงิน" class="text-indigo-600">
+                        <span class="text-xs font-medium"><i class="fa-solid fa-mobile-screen-button text-blue-500"></i> โอนเงิน</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="pt-1 flex gap-2">
+                <button onclick="savePaymentStatus(true)" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg text-xs transition">
+                    <i class="fa-solid fa-check mr-1"></i> ชำระแล้ว
+                </button>
+                <button onclick="savePaymentStatus(false)" class="bg-rose-100 hover:bg-rose-200 text-rose-600 font-semibold px-3 py-2 rounded-lg text-xs transition">
+                    ยกเลิก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const rawStudentList = [
+            "ณัฐภูมิ", "ธนาวัฒน์", "ปัญจพล", "ณัฐชนนท์", "ชวภณ", "ปัญญาวุฒิ", "พงศธร", "ศุภกร", "กนกนิภา", "กัญญาวีร์",
+            "กันต์กนิษฐ์", "กัลยกร", "ชนิพร", "ชุติมา", "ณัฐริภัทร์", "พนิดา", "ภานุรัตน์", "รัชนีกร", "วรรณภา", "วรัชนันท์",
+            "กชกร", "จิรัชยา", "ภัทรวดี", "ภูษณิศา", "ฤทัยภัทร", "อธิการ", "อลิษา", "ศรีรัตน์", "บัญจรัตน์", "ปริยา",
+            "กนกพร", "กรณ์ศศิวรรณ์", "ชยาภา", "สรณ์สิริ", "เสาวลักษณ์"
+        ];
+
+        const WEEKLY_RATE = 25;
+        let currentRole = 'user';
+        let currentWeek = '1';
+        let currentFilter = 'all';
+        let chartInstance = null;
+
+        let db = JSON.parse(localStorage.getItem('m51_payment_db')) || { payments: {}, logs: [] };
+
+        function initApp() {
+            renderTable();
+            updateStats();
+            renderChart();
+            renderUnpaidList();
+            renderLogs();
+        }
+
+        function switchWeek() {
+            currentWeek = document.getElementById('week-select').value;
+            initApp();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('student-table-body');
+            const searchKeyword = document.getElementById('search-input').value.toLowerCase();
+            tbody.innerHTML = '';
+            const weekData = db.payments[currentWeek] || {};
+
+            rawStudentList.forEach((name, idx) => {
+                const studentId = idx + 1;
+                if (searchKeyword && !name.toLowerCase().includes(searchKeyword)) return;
+
+                const record = weekData[studentId] || { paid: false, method: '-', timestamp: '-' };
+
+                if (currentFilter === 'paid' && !record.paid) return;
+                if (currentFilter === 'unpaid' && record.paid) return;
+
+                const row = document.createElement('tr');
+                row.className = record.paid ? 'bg-emerald-50/50 hover:bg-emerald-100/50 transition' : 'bg-rose-50/40 hover:bg-rose-100/40 transition';
+
+                row.innerHTML = `
+                    <td class="px-3 py-2 text-center font-semibold text-slate-500">${studentId}</td>
+                    <td class="px-3 py-2 font-medium text-slate-800">${name}</td>
+                    <td class="px-3 py-2 text-center">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${record.paid ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                            ${record.paid ? 'จ่ายแล้ว' : 'ค้างชำระ'}
+                        </span>
+                    </td>
+                    <td class="px-3 py-2 text-center text-[11px] text-slate-600">${record.method || '-'}</td>
+                    <td class="px-3 py-2 text-center admin-only ${currentRole === 'admin' ? '' : 'hidden'}">
+                        <button onclick="openPaymentModal(${studentId}, '${name}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] px-2 py-1 rounded font-medium transition">
+                            แก้ไข
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateStats() {
+            const weekData = db.payments[currentWeek] || {};
+            let paidCount = 0;
+            rawStudentList.forEach((_, idx) => {
+                if (weekData[idx + 1] && weekData[idx + 1].paid) paidCount++;
+            });
+
+            const totalStudents = rawStudentList.length;
+            const unpaidCount = totalStudents - paidCount;
+
+            document.getElementById('stat-total-money').innerText = `${(paidCount * WEEKLY_RATE).toLocaleString()} บ.`;
+            document.getElementById('stat-target-money').innerText = (totalStudents * WEEKLY_RATE).toLocaleString();
+            document.getElementById('stat-paid-count').innerText = `${paidCount} / ${totalStudents}`;
+            document.getElementById('stat-paid-percent').innerText = `${Math.round((paidCount / totalStudents) * 100)}%`;
+            document.getElementById('stat-unpaid-count').innerText = `${unpaidCount} คน`;
+            document.getElementById('stat-unpaid-money').innerText = (unpaidCount * WEEKLY_RATE).toLocaleString();
+            document.getElementById('unpaid-badge-count').innerText = `${unpaidCount} คน`;
+        }
+
+        function renderChart() {
+            const weekData = db.payments[currentWeek] || {};
+            let paid = 0, unpaid = 0;
+            rawStudentList.forEach((_, idx) => {
+                if (weekData[idx + 1] && weekData[idx + 1].paid) paid++;
+                else unpaid++;
+            });
+
+            const ctx = document.getElementById('paymentChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['จ่ายแล้ว', 'ค้างชำระ'],
+                    datasets: [{ data: [paid, unpaid], backgroundColor: ['#10B981', '#F43F5E'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        function renderUnpaidList() {
+            const unpaidContainer = document.getElementById('unpaid-list');
+            const weekData = db.payments[currentWeek] || {};
+            unpaidContainer.innerHTML = '';
+            let hasUnpaid = false;
+
+            rawStudentList.forEach((name, idx) => {
+                const studentId = idx + 1;
+                if (!weekData[studentId] || !weekData[studentId].paid) {
+                    hasUnpaid = true;
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center p-1.5 bg-rose-50 border border-rose-100 rounded';
+                    item.innerHTML = `
+                        <span class=

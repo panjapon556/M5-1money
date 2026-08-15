@@ -3,372 +3,788 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดการเงินห้อง ม.5/1</title>
+    <title>ระบบจัดการห้องเรียน ม.5/1 — R.N.S.</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Kanit) -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+        .tab-active { background-color: #4f46e5 !important; color: #ffffff !important; }
+        @media print {
+            body * { visibility: hidden; }
+            #printable-cheat-sheet, #printable-cheat-sheet * { visibility: visible; }
+            #printable-cheat-sheet { position: absolute; left: 0; top: 0; width: 100%; border: none !important; shadow: none !important; }
+            .no-print { display: none !important; }
+        }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans pb-10">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
 
     <!-- Header / Navbar -->
-    <nav class="bg-blue-600 p-4 text-white flex justify-between items-center shadow-md">
-        <h1 class="text-xl font-bold flex items-center gap-2">
-            <i class="fa-solid fa-wallet"></i> คลังเงินห้อง ม.5/1
-        </h1>
-        <div class="flex gap-2">
-            <button onclick="openAdminModal()" class="bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 transition shadow-sm">
-                <i class="fa-solid fa-lock"></i> <span id="adminStatusText">Admin</span>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Main Content Container -->
-    <div class="max-w-4xl mx-auto p-4 space-y-4">
-        
-        <!-- Dashboard Cards (แสดงสรุปยอดเงิน) -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-blue-50 p-4 rounded-xl shadow-sm border border-blue-200 col-span-2 md:col-span-1">
-                <p class="text-xs font-semibold text-blue-700">ยอดเงินรวมในคลังห้อง</p>
-                <p id="statGrandTotal" class="text-2xl font-black text-blue-600">0 บาท</p>
-                <p class="text-[10px] text-blue-500 mt-1">*รวมเงินคลัง + รายรับอื่นๆ</p>
+    <header class="bg-indigo-900 text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-700 p-2 rounded-xl border border-indigo-500">
+                    <i class="fa-solid fa-graduation-cap text-xl text-amber-400"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg md:text-xl tracking-tight leading-none">ม.5/1 Classroom Portal</h1>
+                    <p class="text-[11px] text-indigo-300 font-medium">โรงเรียนรัษฎานุประดิษฐ์อนุสรณ์ (R.N.S.)</p>
+                </div>
             </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <p class="text-xs text-gray-500">สถานะการจ่ายเงิน</p>
-                <p id="statPaidCount" class="text-xl font-bold text-emerald-600">จ่ายครบ 35/35 คน</p>
-                <p class="text-xs text-gray-400 mt-1">นักเรียนทั้งหมด 35 คน</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <p class="text-xs text-gray-500">ยอดค้างชำระรวม</p>
-                <p id="statTotalOwed" class="text-xl font-bold text-rose-600">0 บาท</p>
-                <p id="statUnpaidCount" class="text-xs text-gray-400 mt-1">ค้างชำระ 0 คน</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <p class="text-xs text-gray-500">รายรับ-รายจ่ายอื่นๆ</p>
-                <p id="statExtraNet" class="text-xl font-bold text-gray-800">0 บาท</p>
-                <p class="text-[10px] text-gray-400 mt-1">จากบัญชีรวม/ธุรกรรมห้อง</p>
-            </div>
-        </div>
-
-        <!-- Section: บันทึกรายการเงินคลังห้อง (เฉพาะ Admin) -->
-        <div id="adminTransactionSection" class="bg-white p-4 rounded-xl shadow-sm border border-amber-200 hidden space-y-3">
-            <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2">
-                <i class="fa-solid fa-circle-plus text-amber-500"></i> บันทึกรายรับ - รายจ่าย คลังห้อง (Admin)
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
-                <input type="text" id="txTitle" placeholder="รายการ (เช่น เงินกองกลางบัญชีรวม)" class="border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
-                <input type="number" id="txAmount" placeholder="จำนวนเงิน (บาท)" class="border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
-                <select id="txType" class="border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
-                    <option value="income">รายรับ (+)</option>
-                    <option value="expense">รายจ่าย (-)</option>
-                </select>
-                <button onclick="addTransaction()" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold px-4 py-2 rounded-lg text-sm transition">
-                    + เพิ่มรายการ
+            
+            <div class="flex items-center space-x-3">
+                <div class="hidden sm:flex flex-col text-right">
+                    <span id="clock-display" class="font-mono text-sm font-bold text-amber-300">00:00 น.</span>
+                    <span class="text-[10px] text-indigo-200">ภาคเรียนที่ 1/2569</span>
+                </div>
+                <button onclick="toggleAdminModal()" class="bg-indigo-800 hover:bg-indigo-700 border border-indigo-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center">
+                    <i class="fa-solid fa-lock text-amber-400 mr-1.5"></i> Admin Login
                 </button>
             </div>
         </div>
 
-        <!-- Section: ประวัติรายการเงินคลังห้อง -->
-        <div id="txHistoryContainer" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-2 hidden">
-            <h4 class="font-bold text-gray-700 text-xs uppercase tracking-wider">ประวัติรายการเงินเข้า-ออกคลัง</h4>
-            <div class="overflow-x-auto">
-                <table class="w-full text-xs text-left">
-                    <thead class="bg-gray-50 text-gray-600 border-b">
-                        <tr>
-                            <th class="p-2">รายการ</th>
-                            <th class="p-2 text-center">ประเภท</th>
-                            <th class="p-2 text-right">จำนวนเงิน</th>
-                            <th id="txActionHeader" class="p-2 text-center hidden">จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="txTableBody">
-                        <!-- รายการเงินเข้าออกจะแสดงที่นี่ -->
-                    </tbody>
-                </table>
+        <!-- Navigation Tabs -->
+        <nav class="bg-indigo-950 px-4 overflow-x-auto no-scrollbar border-t border-indigo-800">
+            <div class="max-w-7xl mx-auto flex space-x-1 py-2 text-xs font-semibold whitespace-nowrap">
+                <button id="main-tab-dashboard" onclick="switchMainTab('dashboard')" class="main-tab tab-active px-3.5 py-2 rounded-xl transition text-indigo-200 hover:bg-indigo-800">
+                    <i class="fa-solid fa-house mr-1.5"></i> หน้าหลัก
+                </button>
+                <button id="main-tab-homework" onclick="switchMainTab('homework')" class="main-tab px-3.5 py-2 rounded-xl transition text-indigo-200 hover:bg-indigo-800">
+                    <i class="fa-solid fa-book-bookmark mr-1.5"></i> การบ้าน/งานสั่ง
+                </button>
+                <button id="main-tab-finance" onclick="switchMainTab('finance')" class="main-tab px-3.5 py-2 rounded-xl transition text-indigo-200 hover:bg-indigo-800">
+                    <i class="fa-solid fa-wallet mr-1.5"></i> บัญชีเงินห้อง
+                </button>
+                <button id="main-tab-quiz" onclick="switchMainTab('quiz')" class="main-tab px-3.5 py-2 rounded-xl transition text-indigo-200 hover:bg-indigo-800">
+                    <i class="fa-solid fa-bolt mr-1.5"></i> Speed Quiz & คีย์เวิร์ด
+                </button>
+                <button id="main-tab-timetable" onclick="switchMainTab('timetable')" class="main-tab px-3.5 py-2 rounded-xl transition text-indigo-200 hover:bg-indigo-800">
+                    <i class="fa-solid fa-calendar-days mr-1.5"></i> ตารางเรียน & เวรประจำวัน
+                </button>
+                <button id="main-tab-cheatsheet" onclick="switchMainTab('cheatsheet')" class="main-tab px-3.5 py-2 rounded-xl transition text-indigo-200 hover:bg-indigo-800">
+                    <i class="fa-solid fa-file-lines mr-1.5"></i> Cheat Sheet (A4)
+                </button>
+                <button id="main-tab-chat" onclick="switchMainTab('chat')" class="main-tab px-3.5 py-2 rounded-xl transition text-indigo-200 hover:bg-indigo-800">
+                    <i class="fa-solid fa-comments mr-1.5"></i> พูดคุย & เพลงอ่านหนังสือ
+                </button>
             </div>
-        </div>
+        </nav>
+    </header>
 
-        <!-- Filter & Search Section -->
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
-            <div class="flex flex-col md:flex-row gap-3">
-                <div class="relative w-full">
-                    <input type="text" id="searchInput" oninput="renderTable()" placeholder="ค้นหาเลขที่ หรือ ชื่อเพื่อน..." class="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400 text-sm"></i>
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 mt-6">
+
+        <!-- ================= TAB 1: DASHBOARD ================= -->
+        <div id="section-dashboard" class="tab-content space-y-6">
+            <!-- Welcome Hero Card -->
+            <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 text-white p-6 rounded-3xl shadow-lg border border-indigo-700 relative overflow-hidden">
+                <div class="relative z-10 max-w-2xl">
+                    <span class="bg-amber-400 text-indigo-950 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-2 inline-block">ยินดีต้อนรับ ม.5/1</span>
+                    <h2 class="text-2xl md:text-3xl font-black mb-2">ศูนย์รวมข้อมูลข่าวสาร & เครื่องมือการเรียน</h2>
+                    <p class="text-indigo-200 text-xs md:text-sm font-light leading-relaxed">เช็กการบ้าน ยอดเงินกองกลางห้อง ตารางเรียนประจำวัน และสรุปสูตรเตรียมสอบ Midterm ได้สะดวกรวดเร็วที่นี่</p>
                 </div>
             </div>
 
-            <!-- Tabs Filter -->
-            <div class="flex gap-2 border-t pt-3">
-                <button onclick="setFilter('all')" id="btnFilterAll" class="bg-blue-100 text-blue-700 font-medium px-3 py-1 rounded-full text-xs">ทั้งหมด (35 คน)</button>
-                <button onclick="setFilter('paid')" id="btnFilterPaid" class="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full text-xs">จ่ายครบแล้ว</button>
-                <button onclick="setFilter('unpaid')" id="btnFilterUnpaid" class="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full text-xs">มียอดค้างชำระ</button>
+            <!-- Stats Quick View -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400">การบ้านค้างส่ง</p>
+                        <h3 id="dash-hw-count" class="text-2xl font-black text-indigo-950 mt-1">0 งาน</h3>
+                    </div>
+                    <div class="bg-rose-100 text-rose-600 p-3.5 rounded-2xl">
+                        <i class="fa-solid fa-clock-rotate-left text-xl"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400">ยอดเงินกองกลางห้องคงเหลือ</p>
+                        <h3 id="dash-money" class="text-2xl font-black text-emerald-600 mt-1">฿0</h3>
+                    </div>
+                    <div class="bg-emerald-100 text-emerald-600 p-3.5 rounded-2xl">
+                        <i class="fa-solid fa-vault text-xl"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400">เวรทำความสะอาดวันนี้</p>
+                        <h3 class="text-lg font-bold text-indigo-950 mt-1">กลุ่ม 3 (วันพุธ)</h3>
+                    </div>
+                    <div class="bg-amber-100 text-amber-600 p-3.5 rounded-2xl">
+                        <i class="fa-solid fa-broom text-xl"></i>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Student Table -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left text-gray-600">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
-                        <tr>
-                            <th class="px-4 py-3">เลขที่</th>
-                            <th class="px-4 py-3">ชื่อ-นามสกุล</th>
-                            <th class="px-4 py-3 text-center">สถานะ</th>
-                            <th class="px-4 py-3 text-center">ยอดค้างชำระ</th>
-                            <th class="px-4 py-3 text-center">กำหนดยอดค้าง (Admin)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="studentTableBody">
-                        <!-- รายชื่อจะถูกสร้างจากสคริปต์ -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Admin Password Modal -->
-    <div id="adminModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4">
-            <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <i class="fa-solid fa-shield-halved text-amber-500"></i> เข้าสู่ระบบ Admin
-                </h3>
-                <button onclick="closeAdminModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+        <!-- ================= TAB 2: HOMEWORK ================= -->
+        <div id="section-homework" class="tab-content hidden space-y-4">
+            <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center space-x-3">
+                    <h3 class="font-bold text-indigo-950 text-base">รายการการบ้านและงานสั่ง</h3>
+                    <select id="hw-filter" onchange="renderHomework()" class="text-xs p-2 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="all">ทั้งหมด</option>
+                        <option value="chem">เคมี</option>
+                        <option value="phy">ฟิสิกส์</option>
+                        <option value="math">คณิตศาสตร์</option>
+                    </select>
+                </div>
+                <button onclick="openHwModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center">
+                    <i class="fa-solid fa-plus mr-1.5"></i> เพิ่มการบ้านใหม่
                 </button>
             </div>
-            
-            <div class="space-y-2">
-                <label class="text-sm font-medium text-gray-700">รหัสผ่านผู้ดูแลระบบ:</label>
-                <input type="password" id="adminPasswordInput" placeholder="กรอกรหัสผ่าน" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none">
-                <p id="errorMessage" class="text-xs text-rose-500 hidden">รหัสผ่านไม่ถูกต้อง!</p>
+            <div id="homework-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Homework Cards render dynamically -->
+            </div>
+        </div>
+
+        <!-- ================= TAB 3: FINANCE ================= -->
+        <div id="section-finance" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Finance Table -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-indigo-950 text-base flex items-center">
+                            <i class="fa-solid fa-file-invoice-dollar text-emerald-600 mr-2"></i> บันทึกรายรับ-รายจ่ายห้อง ม.5/1
+                        </h3>
+                        <button onclick="openFinanceModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition">
+                            + เพิ่มรายการ
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
+                                    <th class="p-3">วันที่</th>
+                                    <th class="p-3">รายการ</th>
+                                    <th class="p-3">ประเภท</th>
+                                    <th class="p-3 text-right">จำนวนเงิน</th>
+                                    <th class="p-3 text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="finance-table-body">
+                                <!-- Finance Rows Render dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- PromptPay Payment Box -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-indigo-950 text-base mb-1">ชำระเงินห้องผ่าน PromptPay</h3>
+                        <p class="text-xs text-slate-500 mb-4">สแกนจ่ายค่าห้อง/ค่าเอกสารเข้าบัญชีเหรัญญิก</p>
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 inline-block mb-3">
+                            <img id="promptpay-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PromptPay-0812345678-50" alt="PromptPay QR Code" class="w-40 h-40 mx-auto rounded-lg">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-semibold text-slate-600 block">ระบุจำนวนเงินที่จะชำระ (บาท)</label>
+                            <input type="number" id="pay-amount" value="50" oninput="updateQR()" class="w-full text-center text-sm font-bold p-2 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-4">*ระบบจะสร้าง Dynamic QR Code ตามยอดเงินทันที</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 4: QUIZ & KEYWORDS ================= -->
+        <div id="section-quiz" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Speed Quiz Box -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex justify-between items-center border-b pb-3">
+                        <h3 class="font-bold text-indigo-950 text-base flex items-center">
+                            <i class="fa-solid fa-bolt text-amber-500 mr-2"></i> Speed Quiz ทบทวนความรู้ก่อนสอบ
+                        </h3>
+                        <div class="flex space-x-2">
+                            <span id="quiz-timer" class="bg-rose-100 text-rose-700 text-xs font-bold px-2.5 py-1 rounded-lg border border-rose-200 flex items-center">
+                                <i class="fa-solid fa-stopwatch mr-1"></i> <span id="quiz-time-left">15</span>s
+                            </span>
+                            <span id="quiz-score-badge" class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-1 rounded-lg border border-indigo-200">
+                                คะแนน: <span id="quiz-score">0</span>/3
+                            </span>
+                        </div>
+                    </div>
+
+                    <div id="quiz-box" class="bg-slate-50 border border-slate-200 p-5 rounded-2xl relative">
+                        <div class="flex justify-between items-center mb-2">
+                            <span id="quiz-subject" class="text-[11px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">ชีววิทยา</span>
+                            <span id="quiz-progress" class="text-xs text-slate-400 font-medium">ข้อที่ 1 จาก 3</span>
+                        </div>
+                        
+                        <h4 id="quiz-question" class="text-sm md:text-base font-bold text-slate-800 my-3 leading-relaxed">
+                            ข้อใดคือหน้าที่หลักของ ออร์แกเนลล์ "ไมโทคอนเดรีย" (Mitochondria) ภายในเซลล์?
+                        </h4>
+
+                        <div id="quiz-options" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-4">
+                            <!-- Buttons rendered dynamically -->
+                        </div>
+
+                        <div id="quiz-feedback" class="hidden mt-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between">
+                            <span id="quiz-feedback-text"></span>
+                            <button onclick="nextQuestion()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs transition">ข้อถัดไป <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject Keywords Dictionary -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold text-indigo-950 text-base flex items-center">
+                                <i class="fa-solid fa-key text-indigo-600 mr-2"></i> คีย์เวิร์ดจำง่ายก่อนสอบ
+                            </h3>
+                            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">ค้นด่วน</span>
+                        </div>
+                        <input type="text" id="keyword-search" oninput="searchKeywords()" placeholder="พิมพ์คำศัพท์ เช่น ATP, เวกเตอร์, แก๊ส..." class="w-full text-xs p-2.5 border border-slate-200 rounded-xl mb-3 focus:ring-2 focus:ring-indigo-400 outline-none">
+                        
+                        <div id="keywords-container" class="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                            <div class="keyword-item bg-amber-50/60 border border-amber-200/60 p-2.5 rounded-xl">
+                                <div class="flex justify-between items-center mb-0.5">
+                                    <span class="text-xs font-bold text-amber-950">PV = nRT</span>
+                                    <span class="text-[9px] bg-amber-200 text-amber-800 px-1.5 py-0.2 rounded">เคมี</span>
+                                </div>
+                                <p class="text-[11px] text-slate-600">กฎแก๊สอุดมคติ (P=ความดัน, V=ปริมาตร, n=โมล, R=ค่าคงที่, T=เคลวิน)</p>
+                            </div>
+
+                            <div class="keyword-item bg-blue-50/60 border border-blue-200/60 p-2.5 rounded-xl">
+                                <div class="flex justify-between items-center mb-0.5">
+                                    <span class="text-xs font-bold text-blue-950">v = u + at</span>
+                                    <span class="text-[9px] bg-blue-200 text-blue-800 px-1.5 py-0.2 rounded">ฟิสิกส์</span>
+                                </div>
+                                <p class="text-[11px] text-slate-600">การเคลื่อนที่แนวตรงเมื่อความเร่ง (a) คงที่ ใช้หาความเร็วปลาย (v)</p>
+                            </div>
+
+                            <div class="keyword-item bg-emerald-50/60 border border-emerald-200/60 p-2.5 rounded-xl">
+                                <div class="flex justify-between items-center mb-0.5">
+                                    <span class="text-xs font-bold text-emerald-950">Light Reaction</span>
+                                    <span class="text-[9px] bg-emerald-200 text-emerald-800 px-1.5 py-0.2 rounded">ชีวะ</span>
+                                </div>
+                                <p class="text-[11px] text-slate-600">ปฏิกิริยาแสง เกิดขึ้นที่ไทลาคอยด์ (Thylakoid) ได้ ATP และ NADPH</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 5: TIMETABLE & DUTY ================= -->
+        <div id="section-timetable" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-indigo-950 text-base mb-4 flex items-center">
+                    <i class="fa-solid fa-broom text-amber-500 mr-2"></i> เวรทำความสะอาดประจำวัน ห้อง ม.5/1
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-xs font-bold text-slate-700 block border-b border-slate-200 pb-1 mb-2">วันจันทร์ (กลุ่ม 1)</span>
+                        <ul class="text-xs space-y-1 text-slate-600">
+                            <li>• กิตติ (หัวหน้าเวร)</li>
+                            <li>• ณัฐพงศ์</li>
+                            <li>• สุชาดา</li>
+                        </ul>
+                    </div>
+                    <div class="p-3 bg-indigo-50 border-2 border-indigo-400 rounded-xl shadow-sm relative">
+                        <span class="text-xs font-bold text-indigo-950 block border-b border-indigo-200 pb-1 mb-2">วันพุธ (กลุ่ม 3)</span>
+                        <ul class="text-xs space-y-1 text-indigo-900 font-medium">
+                            <li>• ภานุวัฒน์ (หัวหน้าเวร)</li>
+                            <li>• สมชาย</li>
+                            <li>• อารียา</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 6: PRINTABLE A4 CHEAT SHEET ================= -->
+        <div id="section-cheatsheet" class="tab-content hidden space-y-4">
+            <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200 no-print">
+                <div>
+                    <h3 class="font-bold text-indigo-950 text-base">แผ่นสรุปสูตร A4 หน้าเดียวเต็ม (Cheat Sheet)</h3>
+                    <p class="text-xs text-slate-500">รวมสูตรคำนวณและคีย์เวิร์ดสำคัญ เหมาะสำหรับกดพิมพ์ (Print) ออกมาอ่านทบทวนก่อนเข้าห้องสอบ</p>
+                </div>
+                <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow flex items-center">
+                    <i class="fa-solid fa-print mr-1.5"></i> สั่งพิมพ์ A4 (Print)
+                </button>
             </div>
 
-            <div class="flex gap-2 justify-end pt-2">
-                <button onclick="closeAdminModal()" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200">ยกเลิก</button>
-                <button onclick="verifyAdminPassword()" class="px-4 py-2 bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold rounded-lg text-sm">เข้าสู่ระบบ</button>
+            <div id="printable-cheat-sheet" class="bg-white p-6 rounded-2xl border border-slate-300 shadow-md text-slate-900 mx-auto max-w-[210mm]">
+                <div class="border-b-2 border-indigo-950 pb-2 mb-3 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-base font-black text-indigo-950 uppercase tracking-tight">สรุปสูตรสอบ Midterm ม.5/1 — R.N.S.</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 7: LIVE CHAT & WEB RADIO ================= -->
+        <div id="section-chat" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Chat Room -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[520px]">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-3">
+                        <h3 class="font-bold text-indigo-950 text-base flex items-center">
+                            <i class="fa-solid fa-comments text-indigo-600 mr-2"></i> ห้องพูดคุยเม้าส์มอย (Live Chat 5/1)
+                        </h3>
+                    </div>
+
+                    <!-- Chat Messages Area -->
+                    <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-2 mb-3">
+                        <!-- Loaded dynamically from Firebase -->
+                    </div>
+
+                    <!-- Input Box -->
+                    <form onsubmit="sendChatMessage(event)" class="flex gap-2 border-t border-slate-100 pt-3">
+                        <input type="text" id="chat-sender" placeholder="ชื่อของคุณ" class="w-1/4 text-xs border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        <input type="text" id="chat-input" placeholder="พิมพ์ข้อความ..." class="flex-1 text-xs border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition">ส่ง <i class="fa-solid fa-paper-plane ml-1"></i></button>
+                    </form>
+                </div>
+
+                <!-- Web Radio & Chill Study Music -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-indigo-950 text-base mb-3 flex items-center">
+                            <i class="fa-solid fa-radio text-amber-500 mr-2"></i> สถานีเพลงอ่านหนังสือ (Lofi Radio)
+                        </h3>
+                        <div class="bg-slate-900 text-white p-4 rounded-2xl text-center shadow-lg relative overflow-hidden mb-4">
+                            <audio id="audio-player" class="w-full mt-3 h-8 text-xs" controls>
+                                <source src="https://stream.zeno.fm/f3wvbbqmdg8uv" type="audio/mpeg">
+                            </audio>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal: Admin Login -->
+    <div id="admin-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-2xl max-w-sm w-full shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-indigo-950 text-base"><i class="fa-solid fa-lock text-amber-500 mr-1.5"></i> เข้าสู่ระบบ Admin</h3>
+                <button onclick="toggleAdminModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 block mb-1">รหัสผ่านสำหรับผู้ดูแล (Admin PIN)</label>
+                    <input type="password" id="admin-pin" placeholder="กรอกรหัส PIN (เช่น 1234)" class="w-full text-xs p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button onclick="loginAdmin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 rounded-xl transition">ยืนยันเข้าสู่ระบบ</button>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript Data & System Control -->
-    <script>
-        let isAdminLoggedIn = false;
-        let currentFilter = 'all';
+    <!-- Modal: Add Homework -->
+    <div id="hw-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-indigo-950 text-base"><i class="fa-solid fa-plus text-indigo-600 mr-1.5"></i> เพิ่มการบ้านใหม่</h3>
+                <button onclick="closeHwModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="saveHomework(event)" class="space-y-3">
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 block mb-1">ชื่อวิชา</label>
+                    <input type="text" id="hw-title" placeholder="เช่น เคมี, ฟิสิกส์, คณิตศาสตร์" class="w-full text-xs p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 block mb-1">รายละเอียดงาน</label>
+                    <textarea id="hw-desc" placeholder="เช่น ทำแบบฝึกหัดท้ายบทที่ 3 หน้า 45-48" class="w-full text-xs p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 h-20" required></textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 block mb-1">กำหนดส่ง</label>
+                    <input type="date" id="hw-date" class="w-full text-xs p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeHwModal()" class="px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl">ยกเลิก</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">บันทึกงาน</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        // รายชื่อเพื่อน ม.5/1 (35 คน)
-        const studentNames = [
-            "ณัฐภูมิ", "ธนาวัฒน์", "ปัญจพล", "ณัฐชนนท์", "ชวภณ", 
-            "ปัญญาวุฒิ", "พงศธร", "ศุภกร", "กนกนิภา", "กัญญาวีร์", 
-            "กันต์กนิษฐ์", "กัลยกร", "ชนิพร", "ชุติมา", "ณัฐริภัทร์", 
-            "พนิดา", "ภานุรัตน์", "รัชนีกร", "วรรณภา", "วรัชนันท์", 
-            "กชกร", "จิรัชยา", "ภัทรวดี", "ภูษณิศา", "ฤทัยภัทร", 
-            "อธิการ", "อลิษา", "ศรีรัตน์", "บัญจรัตน์", "ปริยา", 
-            "กนกพร", "กรณ์ศศิวรรณ์", "ชยาภา", "สรณ์สิริ", "เสาวลักษณ์"
-        ];
+    <!-- Modal: Add Finance Item -->
+    <div id="finance-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-indigo-950 text-base"><i class="fa-solid fa-receipt text-emerald-600 mr-1.5"></i> บันทึก รายรับ-รายจ่าย</h3>
+                <button onclick="closeFinanceModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="saveFinance(event)" class="space-y-3">
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 block mb-1">รายการ</label>
+                    <input type="text" id="fin-title" placeholder="เช่น เก็บเงินห้องประจำเดือน ส.ค., ค่าชีทฟิสิกส์" class="w-full text-xs p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 block mb-1">ประเภท</label>
+                    <select id="fin-type" class="w-full text-xs p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="income">รายรับ (+)</option>
+                        <option value="expense">รายจ่าย (-)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 block mb-1">จำนวนเงิน (บาท)</label>
+                    <input type="number" id="fin-amount" placeholder="0.00" min="1" class="w-full text-xs p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeFinanceModal()" class="px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl">ยกเลิก</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">บันทึกรายการ</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        // ตั้งค่าเริ่มต้นยอดค้างชำระ = 0 บาท ทุกคน
-        let students = studentNames.map((name, index) => ({
-            id: index + 1,
-            name: name,
-            amountOwed: 0 
-        }));
+    <!-- Firebase SDK (Modular Version 10) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        let transactions = [];
+        // Firebase Configuration (savemoney51 Realtime Database)
+        const firebaseConfig = {
+            databaseURL: "https://savemoney51-default-rtdb.firebaseio.com"
+        };
 
-        document.addEventListener('DOMContentLoaded', () => {
-            renderTable();
-            renderTransactions();
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Global State & Database Refs
+        window.state = {
+            homeworks: {},
+            finances: {},
+            quizList: [
+                {
+                    subject: 'ชีววิทยา',
+                    question: 'ข้อใดคือหน้าที่หลักของ ออร์แกเนลล์ "ไมโทคอนเดรีย" (Mitochondria) ภายในเซลล์?',
+                    options: ['ก. สังเคราะห์โปรตีนเพื่อส่งออกนอกเซลล์', 'ข. สร้างพลังงาน ATP ให้แก่เซลล์', 'ค. ย่อยสลายสิ่งแปลกปลอมและเซลล์ที่หมดอายุ', 'ง. ควบคุมการเข้าออกของสารเคมีผ่านเซลล์'],
+                    correct: 1
+                },
+                {
+                    subject: 'ฟิสิกส์',
+                    question: 'ตามกฎการเคลื่อนที่ข้อที่ 2 ของนิวตัน (ΣF = ma) หากแรงสุทธิ (F) เพิ่มขึ้นเป็น 2 เท่า ความเร่ง (a) จะเป็นอย่างไร?',
+                    options: ['ก. ลดลงครึ่งหนึ่ง', 'ข. เท่าเดิม', 'ค. เพิ่มขึ้นเป็น 2 เท่า', 'ง. เพิ่มขึ้นเป็น 4 เท่า'],
+                    correct: 2
+                },
+                {
+                    subject: 'เคมี',
+                    question: 'ที่อุณหภูมิและความดันคงที่ ปริมาตรของแก๊สจะแปรผันตรงกับจำนวนโมลของแก๊ส เป็นไปตามกฎของนักวิทยาศาสตร์ท่านใด?',
+                    options: ['ก. กฎของโบยล์', 'ข. กฎของชาร์ล', 'ค. กฎของอาโวกาโดร', 'ง. กฎของเกย์-ลูสแซก'],
+                    correct: 2
+                }
+            ],
+            currentQuizIdx: 0,
+            quizScore: 0,
+            quizTimer: null,
+            quizTimeLeft: 15
+        };
+
+        // Initialize Realtime Listeners
+        const hwRef = ref(db, 'homeworks');
+        onValue(hwRef, (snapshot) => {
+            window.state.homeworks = snapshot.val() || {};
+            renderHomework();
         });
 
-        function renderTable() {
-            const tbody = document.getElementById('studentTableBody');
-            const searchKeyword = document.getElementById('searchInput').value.toLowerCase();
-            tbody.innerHTML = '';
+        const finRef = ref(db, 'finances');
+        onValue(finRef, (snapshot) => {
+            window.state.finances = snapshot.val() || {};
+            renderFinance();
+        });
 
-            let paidFullyCount = 0;
-            let totalOwedMoney = 0;
+        const chatRef = ref(db, 'chats');
+        onValue(chatRef, (snapshot) => {
+            const chats = snapshot.val() || {};
+            renderChat(chats);
+        });
 
-            students.forEach(student => {
-                const isPaidFully = student.amountOwed <= 0;
+        // Homework Functions
+        window.renderHomework = function() {
+            const listEl = document.getElementById('homework-list');
+            const filter = document.getElementById('hw-filter').value;
+            listEl.innerHTML = '';
 
-                if (isPaidFully) {
-                    paidFullyCount++;
-                } else {
-                    totalOwedMoney += student.amountOwed;
-                }
+            let activeCount = 0;
+            const entries = Object.entries(window.state.homeworks);
 
-                const matchSearch = student.name.toLowerCase().includes(searchKeyword) || student.id.toString().includes(searchKeyword);
-                const matchFilter = (currentFilter === 'all') || 
-                                    (currentFilter === 'paid' && isPaidFully) || 
-                                    (currentFilter === 'unpaid' && !isPaidFully);
+            entries.forEach(([key, hw]) => {
+                if (filter !== 'all' && hw.category !== filter) return;
+                if (!hw.completed) activeCount++;
 
-                if (matchSearch && matchFilter) {
-                    const tr = document.createElement('tr');
-                    tr.className = 'border-b hover:bg-gray-50';
-                    tr.innerHTML = `
-                        <td class="px-4 py-3 font-medium text-gray-900">${student.id}</td>
-                        <td class="px-4 py-3 font-semibold text-gray-800">${student.name}</td>
-                        <td class="px-4 py-3 text-center">
-                            ${isPaidFully 
-                                ? `<span class="bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-bold"><i class="fa-solid fa-circle-check"></i> จ่ายครบแล้ว</span>` 
-                                : `<span class="bg-rose-100 text-rose-700 px-2.5 py-1 rounded-full text-xs font-bold"><i class="fa-solid fa-clock"></i> ค้างชำระ</span>`}
-                        </td>
-                        <td class="px-4 py-3 text-center font-bold ${student.amountOwed > 0 ? 'text-rose-600' : 'text-gray-400'}">
-                            ${student.amountOwed > 0 ? `${student.amountOwed.toLocaleString()} บาท` : '0 บาท'}
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            ${isAdminLoggedIn 
-                                ? `<div class="flex justify-center items-center gap-1">
-                                    <input type="number" id="inputOwed_${student.id}" placeholder="ระบุจำนวน" value="${student.amountOwed > 0 ? student.amountOwed : ''}" class="w-20 border border-gray-300 rounded px-2 py-1 text-xs text-center focus:ring-1 focus:ring-amber-400 focus:outline-none">
-                                    <button onclick="setStudentOwed(${student.id})" class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-2 py-1 rounded font-medium">ตั้งยอด</button>
-                                    <button onclick="clearStudentOwed(${student.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2 py-1 rounded font-medium" title="ปรับเป็นจ่ายแล้ว">เคลียร์</button>
-                                   </div>`
-                                : `<span class="text-xs text-gray-400">ล็อกอิน Admin เพื่อตั้งยอด</span>`}
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                }
+                const card = document.createElement('div');
+                card.className = `p-4 border rounded-xl transition ${hw.completed ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-200 shadow-sm hover:border-indigo-300'}`;
+                card.innerHTML = `
+                    <div class="flex items-start justify-between mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">${hw.subject}</span>
+                        <span class="text-[10px] text-slate-400 font-medium"><i class="fa-regular fa-clock mr-1"></i>ส่ง ${hw.date}</span>
+                    </div>
+                    <p class="text-xs text-slate-700 font-medium mb-3 ${hw.completed ? 'line-through text-slate-400' : ''}">${hw.desc}</p>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <label class="flex items-center space-x-2 text-xs text-slate-600 cursor-pointer">
+                            <input type="checkbox" ${hw.completed ? 'checked' : ''} onchange="toggleHomework('${key}', ${hw.completed})" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                            <span>${hw.completed ? 'เสร็จสิ้นแล้ว' : 'ทำเสร็จแล้ว'}</span>
+                        </label>
+                        <button onclick="deleteHomework('${key}')" class="text-slate-300 hover:text-rose-500 text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+                listEl.appendChild(card);
             });
 
-            // คำนวณรายรับ-รายจ่ายเพิ่มเติม
-            let extraNet = 0;
-            transactions.forEach(tx => {
-                if (tx.type === 'income') extraNet += tx.amount;
-                else extraNet -= tx.amount;
-            });
+            document.getElementById('dash-hw-count').innerText = `${activeCount} งาน`;
+        };
 
-            // อัปเดตข้อมูลบน Cards
-            document.getElementById('statGrandTotal').innerText = `${extraNet.toLocaleString()} บาท`;
-            document.getElementById('statPaidCount').innerText = `จ่ายครบ ${paidFullyCount} / ${students.length} คน`;
-            document.getElementById('statTotalOwed').innerText = `${totalOwedMoney.toLocaleString()} บาท`;
-            document.getElementById('statUnpaidCount').innerText = `ค้างชำระ ${students.length - paidFullyCount} คน`;
-            document.getElementById('statExtraNet').innerText = `${extraNet >= 0 ? '+' : ''}${extraNet.toLocaleString()} บาท`;
-        }
-
-        // ฟังก์ชั่นตั้งยอดเงินค้างชำระโดยตรง (Admin)
-        function setStudentOwed(studentId) {
-            const inputVal = parseFloat(document.getElementById(`inputOwed_${studentId}`).value);
-            const student = students.find(s => s.id === studentId);
-            if (student) {
-                student.amountOwed = isNaN(inputVal) || inputVal < 0 ? 0 : inputVal;
-                renderTable();
-            }
-        }
-
-        // เคลียร์ยอดค้างชำระเป็น 0 บาท (จ่ายแล้ว)
-        function clearStudentOwed(studentId) {
-            const student = students.find(s => s.id === studentId);
-            if (student) {
-                student.amountOwed = 0;
-                renderTable();
-            }
-        }
-
-        function addTransaction() {
-            const title = document.getElementById('txTitle').value.trim();
-            const amount = parseFloat(document.getElementById('txAmount').value);
-            const type = document.getElementById('txType').value;
-
-            if (!title || isNaN(amount) || amount <= 0) {
-                alert("กรุณากรอกชื่อรายการและจำนวนเงินให้ถูกต้อง");
-                return;
-            }
-
-            transactions.push({
-                id: Date.now(),
-                title: title,
-                amount: amount,
-                type: type
-            });
-
-            document.getElementById('txTitle').value = '';
-            document.getElementById('txAmount').value = '';
-
-            renderTransactions();
-            renderTable();
-        }
-
-        function deleteTransaction(id) {
-            transactions = transactions.filter(tx => tx.id !== id);
-            renderTransactions();
-            renderTable();
-        }
-
-        function renderTransactions() {
-            const txContainer = document.getElementById('txHistoryContainer');
-            const tbody = document.getElementById('txTableBody');
-            const actionHeader = document.getElementById('txActionHeader');
+        window.saveHomework = function(e) {
+            e.preventDefault();
+            const title = document.getElementById('hw-title').value;
+            const desc = document.getElementById('hw-desc').value;
+            const date = document.getElementById('hw-date').value;
             
-            if (transactions.length > 0) {
-                txContainer.classList.remove('hidden');
-            } else {
-                txContainer.classList.add('hidden');
-            }
+            let category = 'math';
+            if (title.includes('เคมี')) category = 'chem';
+            else if (title.includes('ฟิสิกส์')) category = 'phy';
 
-            if (isAdminLoggedIn) actionHeader.classList.remove('hidden');
-            else actionHeader.classList.add('hidden');
+            push(ref(db, 'homeworks'), {
+                subject: title,
+                desc: desc,
+                date: date,
+                category: category,
+                completed: false
+            });
 
+            closeHwModal();
+            e.target.reset();
+        };
+
+        window.toggleHomework = function(key, currentStatus) {
+            update(ref(db, `homeworks/${key}`), { completed: !currentStatus });
+        };
+
+        window.deleteHomework = function(key) {
+            remove(ref(db, `homeworks/${key}`));
+        };
+
+        // Finance Functions
+        window.renderFinance = function() {
+            const tbody = document.getElementById('finance-table-body');
             tbody.innerHTML = '';
-            transactions.forEach(tx => {
+            let total = 0;
+
+            const entries = Object.entries(window.state.finances);
+
+            entries.forEach(([key, item]) => {
+                if (item.type === 'income') total += parseFloat(item.amount);
+                else total -= parseFloat(item.amount);
+
                 const tr = document.createElement('tr');
-                tr.className = 'border-b hover:bg-gray-50';
+                tr.className = 'border-b border-slate-100 hover:bg-slate-50';
                 tr.innerHTML = `
-                    <td class="p-2 font-medium">${tx.title}</td>
-                    <td class="p-2 text-center">
-                        <span class="${tx.type === 'income' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'} px-2 py-0.5 rounded text-[10px] font-bold">
-                            ${tx.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
+                    <td class="p-3 text-slate-500">${item.date}</td>
+                    <td class="p-3 font-semibold text-slate-800">${item.title}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.type === 'income' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                            ${item.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
                         </span>
                     </td>
-                    <td class="p-2 text-right font-bold ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}">
-                        ${tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()} บ.
+                    <td class="p-3 text-right font-bold ${item.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}">
+                        ${item.type === 'income' ? '+' : '-'}฿${Number(item.amount).toLocaleString()}
                     </td>
-                    ${isAdminLoggedIn 
-                        ? `<td class="p-2 text-center">
-                            <button onclick="deleteTransaction(${tx.id})" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash"></i></button>
-                           </td>`
-                        : ''}
+                    <td class="p-3 text-center">
+                        <button onclick="deleteFinance('${key}')" class="text-slate-300 hover:text-rose-500 text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
-        }
 
-        function setFilter(filterType) {
-            currentFilter = filterType;
-            renderTable();
-        }
+            document.getElementById('dash-money').innerText = `฿${total.toLocaleString()}`;
+        };
 
-        function openAdminModal() {
-            if (isAdminLoggedIn) {
-                alert("คุณอยู่ในระบบ Admin เรียบร้อยแล้ว");
-                return;
-            }
-            document.getElementById('adminPasswordInput').value = '';
-            document.getElementById('errorMessage').classList.add('hidden');
-            document.getElementById('adminModal').classList.remove('hidden');
-        }
+        window.saveFinance = function(e) {
+            e.preventDefault();
+            const title = document.getElementById('fin-title').value;
+            const type = document.getElementById('fin-type').value;
+            const amount = parseFloat(document.getElementById('fin-amount').value);
 
-        function closeAdminModal() {
-            document.getElementById('adminModal').classList.add('hidden');
-        }
+            const now = new Date();
+            const dateStr = `${now.getDate()} ส.ค. 2569`;
 
-        function verifyAdminPassword() {
-            const input = document.getElementById('adminPasswordInput').value;
-            if (input === '2552') {
-                isAdminLoggedIn = true;
-                document.getElementById('adminStatusText').innerText = 'Admin (เปิดอยู่)';
-                document.getElementById('adminTransactionSection').classList.remove('hidden');
-                closeAdminModal();
-                alert('เข้าสู่ระบบ Admin สำเร็จ!');
-                renderTable();
-                renderTransactions();
-            } else {
-                document.getElementById('errorMessage').classList.remove('hidden');
-            }
-        }
+            push(ref(db, 'finances'), {
+                date: dateStr,
+                title: title,
+                type: type,
+                amount: amount
+            });
 
-        document.getElementById('adminPasswordInput')?.addEventListener('keyup', function(e) {
-            if (e.key === 'Enter') verifyAdminPassword();
+            closeFinanceModal();
+            e.target.reset();
+        };
+
+        window.deleteFinance = function(key) {
+            remove(ref(db, `finances/${key}`));
+        };
+
+        // Chat Room Realtime
+        window.sendChatMessage = function(e) {
+            e.preventDefault();
+            const sender = document.getElementById('chat-sender').value.trim();
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+
+            if (!msg || !sender) return;
+
+            push(ref(db, 'chats'), {
+                sender: sender,
+                message: msg,
+                timestamp: Date.now()
+            });
+
+            input.value = '';
+        };
+
+        function renderChat(chats) {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+            
+            Object.values(chats).forEach(c => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'flex items-start space-x-2';
+                msgDiv.innerHTML = `
+                    <div class="bg-indigo-100 text-indigo-900 font-bold w-8 h-8 rounded-full flex items-center justify-center text-xs">${c.sender.substring(0, 2)}</div>
+                    <div class="bg-slate-100 p-2.5 rounded-2xl rounded-tl-none max-w-[80%]">
+                        <p class="text-[10px] font-bold text-indigo-900 mb-0.5">${c.sender}</p>
+                        <p class="text-xs text-slate-800">${c.message}</p>
+                    </div>
+                `;
+                container.appendChild(msgDiv);
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
+
+    <!-- UI Interaction Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+            loadQuizQuestion();
         });
+
+        function updateClock() {
+            const now = new Date();
+            const hrs = String(now.getHours()).padStart(2, '0');
+            const mins = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('clock-display').innerText = `${hrs}:${mins} น.`;
+        }
+
+        function switchMainTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.main-tab').forEach(el => el.classList.remove('tab-active'));
+            
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+            document.getElementById(`main-tab-${tabId}`).classList.add('tab-active');
+        }
+
+        function updateQR() {
+            const amt = document.getElementById('pay-amount').value || '0';
+            const qrImg = document.getElementById('promptpay-qr');
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PromptPay-0812345678-${amt}`;
+        }
+
+        function openHwModal() { document.getElementById('hw-modal').classList.remove('hidden'); document.getElementById('hw-modal').classList.add('flex'); }
+        function closeHwModal() { document.getElementById('hw-modal').classList.add('hidden'); document.getElementById('hw-modal').classList.remove('flex'); }
+
+        function openFinanceModal() { document.getElementById('finance-modal').classList.remove('hidden'); document.getElementById('finance-modal').classList.add('flex'); }
+        function closeFinanceModal() { document.getElementById('finance-modal').classList.add('hidden'); document.getElementById('finance-modal').classList.remove('flex'); }
+
+        // Speed Quiz Controls
+        function loadQuizQuestion() {
+            clearInterval(window.state.quizTimer);
+            window.state.quizTimeLeft = 15;
+            document.getElementById('quiz-time-left').innerText = window.state.quizTimeLeft;
+            
+            const q = window.state.quizList[window.state.currentQuizIdx];
+            document.getElementById('quiz-subject').innerText = q.subject;
+            document.getElementById('quiz-progress').innerText = `ข้อที่ ${window.state.currentQuizIdx + 1} จาก ${window.state.quizList.length}`;
+            document.getElementById('quiz-question').innerText = q.question;
+            
+            const optsContainer = document.getElementById('quiz-options');
+            optsContainer.innerHTML = '';
+            
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'quiz-btn text-left text-xs md:text-sm p-3 rounded-xl border border-slate-200 bg-white hover:border-indigo-500 hover:bg-indigo-50 transition font-medium text-slate-700';
+                btn.innerText = opt;
+                btn.onclick = () => checkQuizAnswer(idx);
+                optsContainer.appendChild(btn);
+            });
+
+            document.getElementById('quiz-feedback').classList.add('hidden');
+
+            window.state.quizTimer = setInterval(() => {
+                window.state.quizTimeLeft--;
+                document.getElementById('quiz-time-left').innerText = window.state.quizTimeLeft;
+                if (window.state.quizTimeLeft <= 0) {
+                    clearInterval(window.state.quizTimer);
+                    checkQuizAnswer(-1);
+                }
+            }, 1000);
+        }
+
+        function checkQuizAnswer(selectedIdx) {
+            clearInterval(window.state.quizTimer);
+            const q = window.state.quizList[window.state.currentQuizIdx];
+            const feedbackEl = document.getElementById('quiz-feedback');
+            const feedbackText = document.getElementById('quiz-feedback-text');
+            const btns = document.querySelectorAll('.quiz-btn');
+
+            btns.forEach(btn => btn.disabled = true);
+
+            if (selectedIdx === q.correct) {
+                window.state.quizScore++;
+                document.getElementById('quiz-score').innerText = window.state.quizScore;
+                feedbackEl.className = 'mt-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between bg-emerald-100 text-emerald-900 border border-emerald-200';
+                feedbackText.innerHTML = '<i class="fa-solid fa-circle-check mr-1.5 text-emerald-600"></i> ถูกต้อง! เก่งมากครับ (+1 คะแนน)';
+            } else {
+                feedbackEl.className = 'mt-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between bg-rose-100 text-rose-900 border border-rose-200';
+                feedbackText.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1.5 text-rose-600"></i> ยังไม่ถูก! คำตอบที่ถูกต้องคือ: ${q.options[q.correct]}`;
+            }
+
+            feedbackEl.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            window.state.currentQuizIdx = (window.state.currentQuizIdx + 1) % window.state.quizList.length;
+            loadQuizQuestion();
+        }
+
+        function searchKeywords() {
+            const query = document.getElementById('keyword-search').value.toLowerCase();
+            const items = document.querySelectorAll('.keyword-item');
+            
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+                item.style.display = text.includes(query) ? 'block' : 'none';
+            });
+        }
+
+        function toggleAdminModal() {
+            const modal = document.getElementById('admin-modal');
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+        }
+
+        function loginAdmin() {
+            const pin = document.getElementById('admin-pin').value;
+            if (pin === '1234') {
+                alert('เข้าสู่ระบบ Admin สำเร็จ!');
+                toggleAdminModal();
+            } else {
+                alert('รหัส PIN ไม่ถูกต้อง');
+            }
+        }
     </script>
 </body>
 </html>

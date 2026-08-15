@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบจัดการเงินห้อง ม.5/1</title>
-    <!-- Tailwind CSS สำหรับจัดสไตล์ -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-gray-100 font-sans pb-10">
 
     <!-- Header / Navbar -->
     <nav class="bg-blue-600 p-4 text-white flex justify-between items-center shadow-md">
@@ -19,9 +18,8 @@
             <button class="bg-blue-800 hover:bg-blue-900 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
                 <i class="fa-solid fa-user"></i> ทั่วไป
             </button>
-            <!-- ปุ่ม Admin ที่ผูก onclick เรียบร้อย -->
             <button onclick="openAdminModal()" class="bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 transition">
-                <i class="fa-solid fa-lock"></i> Admin
+                <i class="fa-solid fa-lock"></i> <span id="adminStatusText">Admin</span>
             </button>
         </div>
     </nav>
@@ -33,18 +31,18 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <p class="text-xs text-gray-500">ยอดเก็บสัปดาห์นี้</p>
-                <p class="text-xl font-bold text-blue-600">0 บาท</p>
-                <p class="text-xs text-gray-400">เป้า: 0 บ.</p>
+                <p id="statTotalPaid" class="text-xl font-bold text-blue-600">0 บาท</p>
+                <p class="text-xs text-gray-400">เป้า: 875 บ.</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <p class="text-xs text-gray-500">ชำระแล้ว</p>
-                <p class="text-xl font-bold text-emerald-600">0 / 35</p>
-                <p class="text-xs text-gray-400">0%</p>
+                <p id="statPaidCount" class="text-xl font-bold text-emerald-600">0 / 35</p>
+                <p id="statPaidPercent" class="text-xs text-gray-400">0%</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <p class="text-xs text-gray-500">ค้างชำระ</p>
-                <p class="text-xl font-bold text-rose-500">0 คน</p>
-                <p class="text-xs text-gray-400">ค้าง: 0 บ.</p>
+                <p id="statUnpaidCount" class="text-xl font-bold text-rose-500">35 คน</p>
+                <p id="statUnpaidAmount" class="text-xs text-gray-400">ค้าง: 875 บ.</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <p class="text-xs text-gray-500">อัตราต่อสัปดาห์</p>
@@ -63,28 +61,43 @@
                     <option value="4">สัปดาห์ที่ 4</option>
                 </select>
                 <div class="relative w-full">
-                    <input type="text" placeholder="ค้นหาชื่อนักเรียน..." class="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="searchInput" oninput="renderTable()" placeholder="ค้นหาชื่อนักเรียน..." class="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400 text-sm"></i>
                 </div>
-                <button class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm flex items-center justify-center gap-1 font-medium min-w-max">
-                    <i class="fa-solid fa-file-csv"></i> Export CSV
-                </button>
             </div>
 
             <!-- Tabs Filter -->
             <div class="flex gap-2 border-t pt-3">
-                <button class="bg-blue-100 text-blue-700 font-medium px-3 py-1 rounded-full text-xs">รายชื่อ (35 คน)</button>
-                <button class="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full text-xs">ทั้งหมด</button>
-                <button class="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full text-xs">จ่ายแล้ว</button>
-                <button class="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full text-xs">ค้างชำระ</button>
+                <button onclick="setFilter('all')" id="btnFilterAll" class="bg-blue-100 text-blue-700 font-medium px-3 py-1 rounded-full text-xs">ทั้งหมด (35 คน)</button>
+                <button onclick="setFilter('paid')" id="btnFilterPaid" class="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full text-xs">จ่ายแล้ว</button>
+                <button onclick="setFilter('unpaid')" id="btnFilterUnpaid" class="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full text-xs">ค้างชำระ</button>
+            </div>
+        </div>
+
+        <!-- Student Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-600">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-4 py-3">เลขที่</th>
+                            <th class="px-4 py-3">ชื่อ-นามสกุล</th>
+                            <th class="px-4 py-3 text-center">สถานะ</th>
+                            <th class="px-4 py-3 text-center">จัดการ (Admin)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody">
+                        <!-- รายชื่อนักเรียนจะถูกแสดงตรงนี้ -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
     </div>
 
-    <!-- Admin Password Modal (กล่องป๊อบอัปล็อกอิน) -->
+    <!-- Admin Password Modal -->
     <div id="adminModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4 transform transition-all">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
                 <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <i class="fa-solid fa-shield-halved text-amber-500"></i> เข้าสู่ระบบ Admin
@@ -96,8 +109,8 @@
             
             <div class="space-y-2">
                 <label class="text-sm font-medium text-gray-700">รหัสผ่านสำหรับผู้ดูแลระบบ:</label>
-                <input type="password" id="adminPasswordInput" placeholder="กรอกรหัสผ่าน (เช่น 1234)" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none">
-                <p id="errorMessage" class="text-xs text-rose-500 hidden">รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</p>
+                <input type="password" id="adminPasswordInput" placeholder="กรอกรหัสผ่าน 2552" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                <p id="errorMessage" class="text-xs text-rose-500 hidden">รหัสผ่านไม่ถูกต้อง!</p>
             </div>
 
             <div class="flex gap-2 justify-end pt-2">
@@ -107,52 +120,113 @@
         </div>
     </div>
 
-    <!-- JavaScript Control Section -->
+    <!-- JavaScript Data & Control -->
     <script>
         let isAdminLoggedIn = false;
+        let currentFilter = 'all';
 
-        // ฟังก์ชั่นเปิด Modal ล็อกอิน
+        // รายชื่อนักเรียนตัวอย่าง 35 คน (สามารถแก้ไขชื่อ-นามสกุลจริงได้ตรงนี้)
+        let students = Array.from({ length: 35 }, (_, i) => ({
+            id: i + 1,
+            name: `นักเรียน คนที่ ${i + 1}`,
+            paid: false
+        }));
+
+        // ฟังก์ชั่นเริ่มการทำงานเมื่อเปิดหน้าเว็บ
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTable();
+        });
+
+        // ฟังก์ชั่นวาดตารางรายชื่อนักเรียน
+        function renderTable() {
+            const tbody = document.getElementById('studentTableBody');
+            const searchKeyword = document.getElementById('searchInput').value.toLowerCase();
+            tbody.innerHTML = '';
+
+            let paidCount = 0;
+
+            students.forEach(student => {
+                if (student.paid) paidCount++;
+
+                // การกรองข้อมูลค้นหาและแท็บ
+                const matchSearch = student.name.toLowerCase().includes(searchKeyword);
+                const matchFilter = (currentFilter === 'all') || 
+                                    (currentFilter === 'paid' && student.paid) || 
+                                    (currentFilter === 'unpaid' && !student.paid);
+
+                if (matchSearch && matchFilter) {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b hover:bg-gray-50';
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 font-medium text-gray-900">${student.id}</td>
+                        <td class="px-4 py-3">${student.name}</td>
+                        <td class="px-4 py-3 text-center">
+                            ${student.paid 
+                                ? `<span class="bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-semibold">จ่ายแล้ว</span>` 
+                                : `<span class="bg-rose-100 text-rose-700 px-2.5 py-1 rounded-full text-xs font-semibold">ค้างชำระ</span>`}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            ${isAdminLoggedIn 
+                                ? `<button onclick="togglePayStatus(${student.id})" class="text-xs px-3 py-1 rounded-lg font-medium transition ${student.paid ? 'bg-gray-200 hover:bg-gray-300 text-gray-700' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}">
+                                    ${student.paid ? 'ยกเลิก' : 'ติ๊กจ่าย'}
+                                   </button>`
+                                : `<span class="text-xs text-gray-400">ต้องล็อกอิน Admin</span>`}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            // อัปเดตการ์ดสรุปยอด
+            document.getElementById('statPaidCount').innerText = `${paidCount} / 35`;
+            document.getElementById('statTotalPaid').innerText = `${paidCount * 25} บาท`;
+            document.getElementById('statPaidPercent').innerText = `${Math.round((paidCount / 35) * 100)}%`;
+            document.getElementById('statUnpaidCount').innerText = `${35 - paidCount} คน`;
+            document.getElementById('statUnpaidAmount').innerText = `ค้าง: ${(35 - paidCount) * 25} บ.`;
+        }
+
+        // ฟังก์ชั่นสลับสถานะการจ่ายเงิน
+        function togglePayStatus(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+                student.paid = !student.paid;
+                renderTable();
+            }
+        }
+
+        // ฟังก์ชั่นเลือกแท็บกรอง
+        function setFilter(filterType) {
+            currentFilter = filterType;
+            renderTable();
+        }
+
+        // ฟังก์ชั่น Admin Modal
         function openAdminModal() {
             if (isAdminLoggedIn) {
                 alert("คุณอยู่ในระบบ Admin เรียบร้อยแล้ว");
                 return;
             }
-            const modal = document.getElementById('adminModal');
-            const input = document.getElementById('adminPasswordInput');
-            const errorMsg = document.getElementById('errorMessage');
-            
-            input.value = '';
-            errorMsg.classList.add('hidden');
-            modal.classList.remove('hidden');
-            input.focus();
+            document.getElementById('adminPasswordInput').value = '';
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('adminModal').classList.remove('hidden');
         }
 
-        // ฟังก์ชั่นปิด Modal
         function closeAdminModal() {
             document.getElementById('adminModal').classList.add('hidden');
         }
 
-        // ฟังก์ชั่นตรวจสอบรหัสผ่าน
         function verifyAdminPassword() {
             const input = document.getElementById('adminPasswordInput').value;
-            const errorMsg = document.getElementById('errorMessage');
-
-            if (input === '1234') {
+            if (input === '2552') {
                 isAdminLoggedIn = true;
+                document.getElementById('adminStatusText').innerText = 'Admin (เปิดอยู่)';
                 closeAdminModal();
-                alert('ล็อกอินเข้าสู่ระบบ Admin สำเร็จ!');
-                // สามารถเพิ่มโค้ดเปิดใช้งานฟีเจอร์ Admin ตรงนี้ได้
+                alert('เข้าสู่ระบบ Admin สำเร็จ! ตอนนี้คุณสามารถกด "ติ๊กจ่าย" รายชื่อนักเรียนได้แล้ว');
+                renderTable();
             } else {
-                errorMsg.classList.remove('hidden');
+                document.getElementById('errorMessage').classList.remove('hidden');
             }
         }
-
-        // ให้กด Enter ในช่องรหัสผ่านเพื่อล็อกอินได้
-        document.getElementById('adminPasswordInput')?.addEventListener('keyup', function(e) {
-            if (e.key === 'Enter') {
-                verifyAdminPassword();
-            }
-        });
     </script>
 </body>
 </html>

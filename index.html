@@ -15,10 +15,7 @@
             <i class="fa-solid fa-wallet"></i> คลังเงินห้อง ม.5/1
         </h1>
         <div class="flex gap-2">
-            <button class="bg-blue-800 hover:bg-blue-900 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
-                <i class="fa-solid fa-user"></i> ทั่วไป
-            </button>
-            <button onclick="openAdminModal()" class="bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 transition">
+            <button onclick="openAdminModal()" class="bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 transition shadow-sm">
                 <i class="fa-solid fa-lock"></i> <span id="adminStatusText">Admin</span>
             </button>
         </div>
@@ -27,41 +24,74 @@
     <!-- Main Content Container -->
     <div class="max-w-4xl mx-auto p-4 space-y-4">
         
-        <!-- Dashboard Cards -->
+        <!-- Dashboard Cards (แสดงสรุปยอดเงิน) -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <p class="text-xs text-gray-500">ยอดเก็บสัปดาห์นี้</p>
-                <p id="statTotalPaid" class="text-xl font-bold text-blue-600">0 บาท</p>
-                <p class="text-xs text-gray-400">เป้า: 875 บ.</p>
+            <!-- ยอดเงินรวมคลังห้อง -->
+            <div class="bg-blue-50 p-4 rounded-xl shadow-sm border border-blue-200 col-span-2 md:col-span-1">
+                <p class="text-xs font-semibold text-blue-700">ยอดเงินรวมในคลังห้อง</p>
+                <p id="statGrandTotal" class="text-2xl font-black text-blue-600">0 บาท</p>
+                <p class="text-[10px] text-blue-500 mt-1">*รวมเงินเก็บห้อง + รายรับอื่นๆ</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <p class="text-xs text-gray-500">ชำระแล้ว</p>
-                <p id="statPaidCount" class="text-xl font-bold text-emerald-600">0 / 35</p>
-                <p id="statPaidPercent" class="text-xs text-gray-400">0%</p>
+                <p class="text-xs text-gray-500">เงินเก็บห้องที่เก็บได้</p>
+                <p id="statTotalPaid" class="text-xl font-bold text-emerald-600">0 บาท</p>
+                <p id="statPaidCount" class="text-xs text-gray-400 mt-1">จ่ายครบ 0 / 35 คน</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <p class="text-xs text-gray-500">ค้างชำระ</p>
-                <p id="statUnpaidCount" class="text-xl font-bold text-rose-500">35 คน</p>
-                <p id="statUnpaidAmount" class="text-xs text-gray-400">ค้าง: 875 บ.</p>
+                <p class="text-xs text-gray-500">ยอดค้างชำระรวม</p>
+                <p id="statTotalOwed" class="text-xl font-bold text-rose-600">0 บาท</p>
+                <p id="statUnpaidCount" class="text-xs text-gray-400 mt-1">ค้าง 35 คน</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <p class="text-xs text-gray-500">อัตราต่อสัปดาห์</p>
-                <p class="text-xl font-bold text-gray-800">25 บ./คน</p>
-                <p class="text-xs text-gray-400">(5 วัน × 5 บาท)</p>
+                <p class="text-xs text-gray-500">รายรับ-รายจ่ายอื่นๆ</p>
+                <p id="statExtraNet" class="text-xl font-bold text-gray-800">0 บาท</p>
+                <p class="text-[10px] text-gray-400 mt-1">จากบัญชีรวม/ธุรกรรมห้อง</p>
+            </div>
+        </div>
+
+        <!-- Section: บันทึกรายการเงินคลังห้อง (เฉพาะ Admin) -->
+        <div id="adminTransactionSection" class="bg-white p-4 rounded-xl shadow-sm border border-amber-200 hidden space-y-3">
+            <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2">
+                <i class="fa-solid fa-circle-plus text-amber-500"></i> บันทึกรายรับ - รายจ่าย คลังห้อง (Admin)
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <input type="text" id="txTitle" placeholder="รายการ (เช่น เงินกองกลางบัญชีรวม)" class="border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+                <input type="number" id="txAmount" placeholder="จำนวนเงิน (บาท)" class="border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+                <select id="txType" class="border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    <option value="income">รายรับ (+)</option>
+                    <option value="expense">รายจ่าย (-)</option>
+                </select>
+                <button onclick="addTransaction()" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold px-4 py-2 rounded-lg text-sm transition">
+                    + เพิ่มรายการ
+                </button>
+            </div>
+        </div>
+
+        <!-- Section: ประวัติรายการเงินคลังห้อง -->
+        <div id="txHistoryContainer" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-2 hidden">
+            <h4 class="font-bold text-gray-700 text-xs uppercase tracking-wider">ประวัติรายการเงินเข้า-ออกคลัง</h4>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                    <thead class="bg-gray-50 text-gray-600 border-b">
+                        <tr>
+                            <th class="p-2">รายการ</th>
+                            <th class="p-2 text-center">ประเภท</th>
+                            <th class="p-2 text-right">จำนวนเงิน</th>
+                            <th id="txActionHeader" class="p-2 text-center hidden">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="txTableBody">
+                        <!-- รายการเงินเข้าออกจะแสดงที่นี่ -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- Filter & Search Section -->
         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
             <div class="flex flex-col md:flex-row gap-3">
-                <select id="weekSelect" class="border border-gray-300 rounded-lg p-2 text-sm w-full md:w-48 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="1">สัปดาห์ที่ 1</option>
-                    <option value="2">สัปดาห์ที่ 2</option>
-                    <option value="3">สัปดาห์ที่ 3</option>
-                    <option value="4">สัปดาห์ที่ 4</option>
-                </select>
                 <div class="relative w-full">
-                    <input type="text" id="searchInput" oninput="renderTable()" placeholder="ค้นหาชื่อนักเรียน..." class="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="searchInput" oninput="renderTable()" placeholder="ค้นหาเลขที่ หรือ ชื่อเพื่อน..." class="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400 text-sm"></i>
                 </div>
             </div>
@@ -69,8 +99,8 @@
             <!-- Tabs Filter -->
             <div class="flex gap-2 border-t pt-3">
                 <button onclick="setFilter('all')" id="btnFilterAll" class="bg-blue-100 text-blue-700 font-medium px-3 py-1 rounded-full text-xs">ทั้งหมด (35 คน)</button>
-                <button onclick="setFilter('paid')" id="btnFilterPaid" class="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full text-xs">จ่ายแล้ว</button>
-                <button onclick="setFilter('unpaid')" id="btnFilterUnpaid" class="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full text-xs">ค้างชำระ</button>
+                <button onclick="setFilter('paid')" id="btnFilterPaid" class="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full text-xs">จ่ายครบแล้ว</button>
+                <button onclick="setFilter('unpaid')" id="btnFilterUnpaid" class="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full text-xs">มียอดค้างชำระ</button>
             </div>
         </div>
 
@@ -82,12 +112,13 @@
                         <tr>
                             <th class="px-4 py-3">เลขที่</th>
                             <th class="px-4 py-3">ชื่อ-นามสกุล</th>
-                            <th class="px-4 py-3 text-center">สถานะ</th>
+                            <th class="px-4 py-3 text-center">สถานะการชำระ</th>
+                            <th class="px-4 py-3 text-center">ยอดค้างชำระ</th>
                             <th class="px-4 py-3 text-center">จัดการ (Admin)</th>
                         </tr>
                     </thead>
                     <tbody id="studentTableBody">
-                        <!-- รายชื่อนักเรียนจะถูกแสดงตรงนี้ -->
+                        <!-- รายชื่อจะถูกสร้างจากสคริปต์ -->
                     </tbody>
                 </table>
             </div>
@@ -95,7 +126,7 @@
 
     </div>
 
-    <!-- Admin Password Modal -->
+    <!-- Admin Password Modal (ไม่มีข้อความบอกรหัสผ่านแล้ว) -->
     <div id="adminModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
@@ -108,8 +139,8 @@
             </div>
             
             <div class="space-y-2">
-                <label class="text-sm font-medium text-gray-700">รหัสผ่านสำหรับผู้ดูแลระบบ:</label>
-                <input type="password" id="adminPasswordInput" placeholder="กรอกรหัสผ่าน 2552" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                <label class="text-sm font-medium text-gray-700">รหัสผ่านผู้ดูแลระบบ:</label>
+                <input type="password" id="adminPasswordInput" placeholder="กรอกรหัสผ่าน" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none">
                 <p id="errorMessage" class="text-xs text-rose-500 hidden">รหัสผ่านไม่ถูกต้อง!</p>
             </div>
 
@@ -120,87 +151,192 @@
         </div>
     </div>
 
-    <!-- JavaScript Data & Control -->
+    <!-- JavaScript Data & System Control -->
     <script>
         let isAdminLoggedIn = false;
         let currentFilter = 'all';
+        const RATE_PER_WEEK = 25; // เงินห้องสัปดาห์ละ 25 บาท
 
-        // รายชื่อนักเรียนตัวอย่าง 35 คน (สามารถแก้ไขชื่อ-นามสกุลจริงได้ตรงนี้)
-        let students = Array.from({ length: 35 }, (_, i) => ({
-            id: i + 1,
-            name: `นักเรียน คนที่ ${i + 1}`,
-            paid: false
+        // รายชื่อเพื่อน ม.5/1 (35 คน)
+        const studentNames = [
+            "ณัฐภูมิ", "ธนาวัฒน์", "ปัญจพล", "ณัฐชนนท์", "ชวภณ", 
+            "ปัญญาวุฒิ", "พงศธร", "ศุภกร", "กนกนิภา", "กัญญาวีร์", 
+            "กันต์กนิษฐ์", "กัลยกร", "ชนิพร", "ชุติมา", "ณัฐริภัทร์", 
+            "พนิดา", "ภานุรัตน์", "รัชนีกร", "วรรณภา", "วรัชนันท์", 
+            "กชกร", "จิรัชยา", "ภัทรวดี", "ภูษณิศา", "ฤทัยภัทร", 
+            "อธิการ", "อลิษา", "ศรีรัตน์", "บัญจรัตน์", "ปริยา", 
+            "กนกพร", "กรณ์ศศิวรรณ์", "ชยาภา", "สรณ์สิริ", "เสาวลักษณ์"
+        ];
+
+        let students = studentNames.map((name, index) => ({
+            id: index + 1,
+            name: name,
+            weeksOwed: 0
         }));
 
-        // ฟังก์ชั่นเริ่มการทำงานเมื่อเปิดหน้าเว็บ
+        // รายการธุรกรรมอื่นๆ ในคลังห้อง (รายรับ-รายจ่าย)
+        let transactions = [
+            { id: 1, title: "ยอดยกมาจากบัญชีรวม", amount: 500, type: "income" }
+        ];
+
         document.addEventListener('DOMContentLoaded', () => {
             renderTable();
+            renderTransactions();
         });
 
-        // ฟังก์ชั่นวาดตารางรายชื่อนักเรียน
         function renderTable() {
             const tbody = document.getElementById('studentTableBody');
             const searchKeyword = document.getElementById('searchInput').value.toLowerCase();
             tbody.innerHTML = '';
 
-            let paidCount = 0;
+            let paidFullyCount = 0;
+            let totalOwedMoney = 0;
+            let totalPaidMoney = 0;
 
             students.forEach(student => {
-                if (student.paid) paidCount++;
+                const amountOwed = student.weeksOwed * RATE_PER_WEEK;
+                const isPaidFully = student.weeksOwed === 0;
 
-                // การกรองข้อมูลค้นหาและแท็บ
-                const matchSearch = student.name.toLowerCase().includes(searchKeyword);
+                if (isPaidFully) {
+                    paidFullyCount++;
+                    totalPaidMoney += RATE_PER_WEEK * 4; // สมมติ 4 สัปดาห์
+                } else {
+                    totalOwedMoney += amountOwed;
+                }
+
+                const matchSearch = student.name.toLowerCase().includes(searchKeyword) || student.id.toString().includes(searchKeyword);
                 const matchFilter = (currentFilter === 'all') || 
-                                    (currentFilter === 'paid' && student.paid) || 
-                                    (currentFilter === 'unpaid' && !student.paid);
+                                    (currentFilter === 'paid' && isPaidFully) || 
+                                    (currentFilter === 'unpaid' && !isPaidFully);
 
                 if (matchSearch && matchFilter) {
                     const tr = document.createElement('tr');
                     tr.className = 'border-b hover:bg-gray-50';
                     tr.innerHTML = `
                         <td class="px-4 py-3 font-medium text-gray-900">${student.id}</td>
-                        <td class="px-4 py-3">${student.name}</td>
+                        <td class="px-4 py-3 font-semibold text-gray-800">${student.name}</td>
                         <td class="px-4 py-3 text-center">
-                            ${student.paid 
-                                ? `<span class="bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-semibold">จ่ายแล้ว</span>` 
-                                : `<span class="bg-rose-100 text-rose-700 px-2.5 py-1 rounded-full text-xs font-semibold">ค้างชำระ</span>`}
+                            ${isPaidFully 
+                                ? `<span class="bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-bold"><i class="fa-solid fa-circle-check"></i> จ่ายครบแล้ว</span>` 
+                                : `<span class="bg-rose-100 text-rose-700 px-2.5 py-1 rounded-full text-xs font-bold"><i class="fa-solid fa-clock"></i> ค้าง ${student.weeksOwed} สัปดาห์</span>`}
+                        </td>
+                        <td class="px-4 py-3 text-center font-bold ${amountOwed > 0 ? 'text-rose-600' : 'text-gray-400'}">
+                            ${amountOwed > 0 ? `${amountOwed} บาท` : '0 บาท'}
                         </td>
                         <td class="px-4 py-3 text-center">
                             ${isAdminLoggedIn 
-                                ? `<button onclick="togglePayStatus(${student.id})" class="text-xs px-3 py-1 rounded-lg font-medium transition ${student.paid ? 'bg-gray-200 hover:bg-gray-300 text-gray-700' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}">
-                                    ${student.paid ? 'ยกเลิก' : 'ติ๊กจ่าย'}
-                                   </button>`
-                                : `<span class="text-xs text-gray-400">ต้องล็อกอิน Admin</span>`}
+                                ? `<div class="flex justify-center gap-1">
+                                    <button onclick="changeOwed(${student.id}, -1)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded font-medium">จ่าย (-1 W)</button>
+                                    <button onclick="changeOwed(${student.id}, 1)" class="bg-rose-500 hover:bg-rose-600 text-white text-xs px-2.5 py-1 rounded font-medium">+ค้าง (+1 W)</button>
+                                   </div>`
+                                : `<span class="text-xs text-gray-400">ล็อกอิน Admin เพื่อปรับยอด</span>`}
                         </td>
                     `;
                     tbody.appendChild(tr);
                 }
             });
 
-            // อัปเดตการ์ดสรุปยอด
-            document.getElementById('statPaidCount').innerText = `${paidCount} / 35`;
-            document.getElementById('statTotalPaid').innerText = `${paidCount * 25} บาท`;
-            document.getElementById('statPaidPercent').innerText = `${Math.round((paidCount / 35) * 100)}%`;
-            document.getElementById('statUnpaidCount').innerText = `${35 - paidCount} คน`;
-            document.getElementById('statUnpaidAmount').innerText = `ค้าง: ${(35 - paidCount) * 25} บ.`;
+            // คำนวณรายรับ-รายจ่ายเพิ่มเติม
+            let extraNet = 0;
+            transactions.forEach(tx => {
+                if (tx.type === 'income') extraNet += tx.amount;
+                else extraNet -= tx.amount;
+            });
+
+            const grandTotal = totalPaidMoney + extraNet;
+
+            // อัปเดตข้อมูลบน Cards
+            document.getElementById('statGrandTotal').innerText = `${grandTotal.toLocaleString()} บาท`;
+            document.getElementById('statTotalPaid').innerText = `${totalPaidMoney.toLocaleString()} บาท`;
+            document.getElementById('statPaidCount').innerText = `จ่ายครบ ${paidFullyCount} / ${students.length} คน`;
+            document.getElementById('statTotalOwed').innerText = `${totalOwedMoney.toLocaleString()} บาท`;
+            document.getElementById('statUnpaidCount').innerText = `ค้าง ${students.length - paidFullyCount} คน`;
+            document.getElementById('statExtraNet').innerText = `${extraNet >= 0 ? '+' : ''}${extraNet.toLocaleString()} บาท`;
         }
 
-        // ฟังก์ชั่นสลับสถานะการจ่ายเงิน
-        function togglePayStatus(studentId) {
+        // ฟังก์ชั่นจัดการเพิ่มรายการธุรกรรม (Admin)
+        function addTransaction() {
+            const title = document.getElementById('txTitle').value.trim();
+            const amount = parseFloat(document.getElementById('txAmount').value);
+            const type = document.getElementById('txType').value;
+
+            if (!title || isNaN(amount) || amount <= 0) {
+                alert("กรุณากรอกชื่อรายการและจำนวนเงินให้ถูกต้อง");
+                return;
+            }
+
+            transactions.push({
+                id: Date.now(),
+                title: title,
+                amount: amount,
+                type: type
+            });
+
+            document.getElementById('txTitle').value = '';
+            document.getElementById('txAmount').value = '';
+
+            renderTransactions();
+            renderTable();
+        }
+
+        function deleteTransaction(id) {
+            transactions = transactions.filter(tx => tx.id !== id);
+            renderTransactions();
+            renderTable();
+        }
+
+        function renderTransactions() {
+            const txContainer = document.getElementById('txHistoryContainer');
+            const tbody = document.getElementById('txTableBody');
+            const actionHeader = document.getElementById('txActionHeader');
+            
+            if (transactions.length > 0) {
+                txContainer.classList.remove('hidden');
+            } else {
+                txContainer.classList.add('hidden');
+            }
+
+            if (isAdminLoggedIn) actionHeader.classList.remove('hidden');
+            else actionHeader.classList.add('hidden');
+
+            tbody.innerHTML = '';
+            transactions.forEach(tx => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="p-2 font-medium">${tx.title}</td>
+                    <td class="p-2 text-center">
+                        <span class="${tx.type === 'income' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'} px-2 py-0.5 rounded text-[10px] font-bold">
+                            ${tx.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
+                        </span>
+                    </td>
+                    <td class="p-2 text-right font-bold ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}">
+                        ${tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()} บ.
+                    </td>
+                    ${isAdminLoggedIn 
+                        ? `<td class="p-2 text-center">
+                            <button onclick="deleteTransaction(${tx.id})" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash"></i></button>
+                           </td>`
+                        : ''}
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function changeOwed(studentId, change) {
             const student = students.find(s => s.id === studentId);
             if (student) {
-                student.paid = !student.paid;
+                student.weeksOwed = Math.max(0, student.weeksOwed + change);
                 renderTable();
             }
         }
 
-        // ฟังก์ชั่นเลือกแท็บกรอง
         function setFilter(filterType) {
             currentFilter = filterType;
             renderTable();
         }
 
-        // ฟังก์ชั่น Admin Modal
+        // ระบบ Admin
         function openAdminModal() {
             if (isAdminLoggedIn) {
                 alert("คุณอยู่ในระบบ Admin เรียบร้อยแล้ว");
@@ -220,13 +356,19 @@
             if (input === '2552') {
                 isAdminLoggedIn = true;
                 document.getElementById('adminStatusText').innerText = 'Admin (เปิดอยู่)';
+                document.getElementById('adminTransactionSection').classList.remove('hidden');
                 closeAdminModal();
-                alert('เข้าสู่ระบบ Admin สำเร็จ! ตอนนี้คุณสามารถกด "ติ๊กจ่าย" รายชื่อนักเรียนได้แล้ว');
+                alert('เข้าสู่ระบบ Admin สำเร็จ!');
                 renderTable();
+                renderTransactions();
             } else {
                 document.getElementById('errorMessage').classList.remove('hidden');
             }
         }
+
+        document.getElementById('adminPasswordInput')?.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') verifyAdminPassword();
+        });
     </script>
 </body>
 </html>
